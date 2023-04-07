@@ -37,11 +37,14 @@ pipeline {
     }
   }
   post {
-  always {
-    input 'Do you want to delete the resource?'
-    script {
-      sh 'terraform destroy -auto-approve'
+    always {
+      input 'Do you want to delete the resource?'
+      script {
+        dir('terraform') {
+          sh 'terraform destroy -target=aws_s3_bucket.agency_bucket -auto-approve'
+        }
+        sh 'aws s3 rm s3://myagencya-bucket --recursive'
+      }
     }
   }
-}
 }
