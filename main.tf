@@ -5,7 +5,7 @@ provider "aws" {
 
 # Create the S3 bucket for the agency
 resource "aws_s3_bucket" "agency_bucket" {
-  bucket = "myagencya-bucket"
+  bucket = "myagencya-bucket1"
   acl    = "private"
   tags = {
     Name = "myagencya-bucket1"
