@@ -22,10 +22,18 @@ resource "aws_transfer_server" "sftp" {
 # Create the S3 bucket for the agency
 resource "aws_s3_bucket" "agency_bucket" {
   bucket = "${var.agency}-bucket"
-  acl    = "private"
   tags = {
     Name = "${var.agency}-bucket"
   }
+}
+
+# Set the ACL for the S3 bucket
+resource "aws_s3_bucket_acl" "agency_bucket_acl" {
+  bucket = aws_s3_bucket.agency_bucket.id
+
+  # Set the ACL to private
+  # See https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl for more options
+  acl = "private"
 }
 
 # Create the IAM role for the agency
@@ -71,14 +79,25 @@ resource "aws_iam_role_policy_attachment" "agency_policy_attachment" {
   role            = aws_iam_role.agency_role.name
 }
 
-# Configure the SFTP server to use the S3 bucket as its root directory for the agency
-resource "aws_transfer_user" "sftp_user" {
+
+data "local_file" "jenkins_ssh_key" {
+  filename = "/home/ubuntu/key/Authentication/jenkinskey.pem"
+}
+
+# Create an SSH key for the SFTP user
+resource "aws_transfer_ssh_key" "sftp_user_ssh_key" {
   server_id = aws_transfer_server.sftp.id
-  user_name = "${var.agency}-user"
-  home_directory = "/${var.agency}-bucket"
-  home_directory_type = "S3"
-  role = aws_iam_role.agency_role.arn
-  ssh_public_key_body = file("/home/ubuntu/key/Authentication")
+  user_name = aws_transfer_user.sftp_user.user_name
+  body = data.local_file.jenkins_ssh_key.content
+}
+
+# Configure the SFTP user with the SSH key
+resource "aws_transfer_user" "sftp_user" {
+  server_id          = aws_transfer_server.sftp.id
+  user_name          = "${var.agency}-user"
+  home_directory     = "/${var.agency}-bucket"
+  home_directory_type = "LOGICAL"
+  role               = aws_iam_role.agency_role.arn
 }
 
 # Output the values required to connect the SFTP user to the server
@@ -91,24 +110,24 @@ output "agency_sftp_server_url" {
 }
 
 output "login_command" {
-  value = "sftp -i /path/to/key.pem ${aws_transfer_user.sftp_user.username}@${aws_transfer_server.sftp.endpoint}"
+  value = "sftp -i /path/to/key.pem ${aws_transfer_user.sftp_user.user_name}@${aws_transfer_server.sftp.endpoint}"
 }
 
 # Configure the CloudWatch metric alarm to monitor the S3 bucket for each agency
 resource "aws_cloudwatch_metric_alarm" "missing_data_alarm" {
-  alarm_name      = "${var.agencies}-missing-data-alarm"
+  alarm_name      = "${var.agency}-missing-data-alarm"
   comparison_operator = "LessThanThreshold"
   evaluation_periods = 1
   metric_name     = "NumberOfObjects"
   namespace       = "AWS/S3"
-  period          = 86400 # 24 hours
+  period          = 300 # for every 5 minutes
   statistic       = "Average"
   threshold       = 1
-  alarm_description = "Alert if the number of objects in the S3 bucket for ${var.agencies} is less than expected"
+  alarm_description = "Alert if the number of objects in the S3 bucket for ${var.agency} is less than expected"
   alarm_actions   = [aws_sns_topic.incident_alerts.arn] # Replace with your SNS topic ARN for email notifications
 
   dimensions = {
-    BucketName = aws_s3_bucket.agency_buckets.id
+    BucketName = aws_s3_bucket.agency_bucket.id
   }
 }
 
@@ -123,3 +142,4 @@ resource "aws_sns_topic_subscription" "sre_email_subscription" {
   protocol  = "email"
   endpoint  = "chethan7119982@gmail.com"
 }
+
