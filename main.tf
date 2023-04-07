@@ -8,6 +8,6 @@ resource "aws_s3_bucket" "agency_bucket" {
   bucket = "myagencya-bucket"
   acl    = "private"
   tags = {
-    Name = "myagencya-bucket"
+    Name = "myagencya-bucket1"
   }
 }
