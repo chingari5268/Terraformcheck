@@ -74,7 +74,7 @@ resource "aws_iam_role_policy_attachment" "agency_policy_attachment" {
 # Configure the SFTP server to use the S3 bucket as its root directory for the agency
 resource "aws_transfer_user" "sftp_user" {
   server_id = aws_transfer_server.sftp.id
-  username = "${var.agency}-user"
+  user_name = "${var.agency}-user"
   home_directory = "/${var.agency}-bucket"
   home_directory_type = "S3"
   role = aws_iam_role.agency_role.arn
