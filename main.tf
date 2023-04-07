@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_s3_bucket" "my_bucket" {
   bucket = "mybucketterraformmmm" # replace with your desired bucket name
-  acl    = "public"
+  acl    = "private"
   
   tags = {
     Environment = "dev"
