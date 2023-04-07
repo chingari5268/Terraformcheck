@@ -36,4 +36,12 @@ pipeline {
       }
     }
   }
+  post {
+  always {
+    input 'Do you want to delete the resource?'
+    script {
+      sh 'terraform destroy -target=aws_s3_bucket.myagencya-bucket1 -auto-approve'
+    }
+  }
+}
 }
