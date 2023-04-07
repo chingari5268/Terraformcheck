@@ -41,9 +41,9 @@ pipeline {
       input 'Do you want to delete the resource?'
       script {
         dir('terraform') {
-          sh 'terraform destroy -target=aws_s3_bucket.agency_bucket -auto-approve'
+          sh 'terraform destroy -target=aws_s3_bucket.myagencya-bucket1 -auto-approve'
         }
-        sh 'aws s3 rm s3://myagencya-bucket --recursive'
+        sh 'aws s3 rm s3://myagencya-bucket1 --recursive'
       }
     }
   }
